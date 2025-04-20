@@ -6,12 +6,15 @@ import br.com.dio.exception.CardFinishedException;
 import br.com.dio.exception.EntityNotFoundException;
 import br.com.dio.persistence.dao.BlockDAO;
 import br.com.dio.persistence.dao.CardDAO;
+import br.com.dio.persistence.dao.MoveDAO;
 import br.com.dio.persistence.entity.CardEntity;
 import lombok.AllArgsConstructor;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.OptionalInt;
+import java.util.stream.IntStream;
 
 import static br.com.dio.persistence.entity.BoardColumnKindEnum.CANCEL;
 import static br.com.dio.persistence.entity.BoardColumnKindEnum.FINAL;
@@ -22,10 +25,11 @@ public class CardService {
 
     private final Connection connection;
 
-    public CardEntity create(final CardEntity entity) throws SQLException {
+    public CardEntity create(final CardEntity entity, final List<BoardColumnInfoDTO> boardColumnsInfo) throws SQLException {
         try {
             var dao = new CardDAO(connection);
-            dao.insert(entity);
+            var newCard = dao.insert(entity);
+            startMove(newCard.getId(), boardColumnsInfo);
             connection.commit();
             return entity;
         } catch (SQLException ex){
@@ -55,7 +59,9 @@ public class CardService {
             var nextColumn = boardColumnsInfo.stream()
                     .filter(bc -> bc.order() == currentColumn.order() + 1)
                     .findFirst().orElseThrow(() -> new IllegalStateException("O card está cancelado"));
+
             dao.moveToColumn(nextColumn.id(), cardId);
+            finishMove(cardId, dto.columnName(), boardColumnsInfo);
             connection.commit();
         }catch (SQLException ex){
             connection.rollback();
@@ -140,6 +146,30 @@ public class CardService {
             connection.rollback();
             throw ex;
         }
+    }
+
+    private void startMove(final Long cardId, final List<BoardColumnInfoDTO> boardColumnsInfo) throws SQLException{
+        var moveDAO = new MoveDAO(connection);
+        var from = boardColumnsInfo.getFirst().id();
+        var to = boardColumnsInfo.get(1).id();
+        moveDAO.startMove(from, to, cardId);
+    }
+
+    private void finishMove(final Long cardId, final String columnName, final List<BoardColumnInfoDTO> boardColumnsInfo) throws SQLException{
+        var moveDAO = new MoveDAO(connection);
+        moveDAO.finishMove(cardId);
+        OptionalInt optIndex = IntStream.range(0, boardColumnsInfo.size())
+                .filter(i -> boardColumnsInfo.get(i)
+                        .name()
+                        .equals(columnName))
+                .findFirst();
+        boardColumnsInfo.getFirst().kind().getClass();
+        if (!boardColumnsInfo.get(optIndex.getAsInt()+1).kind().equals(FINAL)) {
+            var from = boardColumnsInfo.get(optIndex.getAsInt() + 1).id();
+            var to = boardColumnsInfo.get(optIndex.getAsInt() + 2).id();
+            moveDAO.startMove(from, to, cardId);
+        }
+
     }
 
 }

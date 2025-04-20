@@ -65,8 +65,12 @@ public class BoardMenu {
         System.out.println("Informe a descrição do card");
         card.setDescription(scanner.next());
         card.setBoardColumn(entity.getInitialColumn());
+
+        var boardColumnsInfo = entity.getBoardColumns().stream()
+                .map(bc -> new BoardColumnInfoDTO(bc.getId(), bc.getOrder(), bc.getKind(), bc.getName()))
+                .toList();
         try(var connection = getConnection()){
-            new CardService(connection).create(card);
+            new CardService(connection).create(card, boardColumnsInfo);
         }
     }
 
@@ -74,7 +78,7 @@ public class BoardMenu {
         System.out.println("Informe o id do card que deseja mover para a próxima coluna");
         var cardId = scanner.nextLong();
         var boardColumnsInfo = entity.getBoardColumns().stream()
-                .map(bc -> new BoardColumnInfoDTO(bc.getId(), bc.getOrder(), bc.getKind()))
+                .map(bc -> new BoardColumnInfoDTO(bc.getId(), bc.getOrder(), bc.getKind(), bc.getName()))
                 .toList();
         try(var connection = getConnection()){
             new CardService(connection).moveToNextColumn(cardId, boardColumnsInfo);
@@ -89,7 +93,7 @@ public class BoardMenu {
         System.out.println("Informe o motivo do bloqueio do card");
         var reason = scanner.next();
         var boardColumnsInfo = entity.getBoardColumns().stream()
-                .map(bc -> new BoardColumnInfoDTO(bc.getId(), bc.getOrder(), bc.getKind()))
+                .map(bc -> new BoardColumnInfoDTO(bc.getId(), bc.getOrder(), bc.getKind(), bc.getName()))
                 .toList();
         try(var connection = getConnection()){
             new CardService(connection).block(cardId, reason, boardColumnsInfo);
@@ -115,7 +119,7 @@ public class BoardMenu {
         var cardId = scanner.nextLong();
         var cancelColumn = entity.getCancelColumn();
         var boardColumnsInfo = entity.getBoardColumns().stream()
-                .map(bc -> new BoardColumnInfoDTO(bc.getId(), bc.getOrder(), bc.getKind()))
+                .map(bc -> new BoardColumnInfoDTO(bc.getId(), bc.getOrder(), bc.getKind(), bc.getName()))
                 .toList();
         try(var connection = getConnection()){
             new CardService(connection).cancel(cardId, cancelColumn.getId(), boardColumnsInfo);
