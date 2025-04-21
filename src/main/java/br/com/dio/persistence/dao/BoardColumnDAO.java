@@ -8,9 +8,10 @@ import lombok.RequiredArgsConstructor;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
 
 import static br.com.dio.persistence.entity.BoardColumnKindEnum.findByName;
 import static java.util.Objects.isNull;
@@ -122,5 +123,4 @@ public class BoardColumnDAO {
             return Optional.empty();
         }
     }
-
 }

@@ -1,13 +1,14 @@
 package br.com.dio.persistence.dao;
 
 import br.com.dio.dto.CardDetailsDTO;
+import br.com.dio.dto.CardReportDTO;
 import br.com.dio.persistence.entity.CardEntity;
 import com.mysql.cj.jdbc.StatementImpl;
 import lombok.AllArgsConstructor;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Optional;
+import java.util.*;
 
 import static br.com.dio.persistence.converter.OffsetDateTimeConverter.toOffsetDateTime;
 import static java.util.Objects.nonNull;
@@ -84,5 +85,51 @@ public class CardDAO {
         }
         return Optional.empty();
     }
+
+    public List<MoveRecord> findColumnDurationsByBoardId (final Long boardId) throws SQLException {
+        var sql =
+                """
+                        SELECT
+                        	c.id AS card_id,
+                        	c.title AS card_title,
+                        	bc_from.name AS column_name,
+                        	TIMESTAMPDIFF(SECOND, m.current_column_at, m.moved_at) AS duration_seconds
+                        FROM moves m
+                        	INNER JOIN cards c
+                        		ON c.id = m.card_id
+                        	INNER JOIN boards_columns bc_from
+                        		ON bc_from.id = m.from_column_id
+                        	INNER JOIN boards_columns bc_to
+                        		ON bc_to.id = m.to_column_id
+                        WHERE bc_from.board_id = ?
+                        and m.moved_at is not null
+                        ORDER BY c.id, m.current_column_at
+                """;
+        List<MoveRecord> report = new ArrayList<>();
+        try(var statement = connection.prepareStatement(sql)){
+            statement.setLong(1, boardId);
+            statement.executeQuery();
+            var resultSet = statement.getResultSet();
+
+
+            while (resultSet.next()) {
+                report.add(new MoveRecord(
+                        resultSet.getLong("card_id"),
+                        resultSet.getString("card_title"),
+                        resultSet.getString("column_name"),
+                        resultSet.getLong("duration_seconds")
+                ));
+            }
+            return report;
+        }
+
+    }
+
+    public static record MoveRecord(
+            Long cardId,
+            String cardTitle,
+            String columnName,
+            long durationSeconds
+    ) {}
 
 }

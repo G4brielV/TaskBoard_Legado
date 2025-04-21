@@ -1,6 +1,9 @@
 package br.com.dio.ui;
 
 import br.com.dio.dto.BoardColumnInfoDTO;
+import br.com.dio.dto.BoardDetailsDTO;
+import br.com.dio.dto.CardReportDTO;
+import br.com.dio.dto.ColumnDurationDTO;
 import br.com.dio.persistence.entity.BoardColumnEntity;
 import br.com.dio.persistence.entity.BoardEntity;
 import br.com.dio.persistence.entity.CardEntity;
@@ -11,6 +14,8 @@ import br.com.dio.service.CardService;
 import lombok.AllArgsConstructor;
 
 import java.sql.SQLException;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Scanner;
 
 import static br.com.dio.persistence.config.ConnectionConfig.getConnection;
@@ -36,7 +41,8 @@ public class BoardMenu {
                 System.out.println("7 - Ver coluna com cards");
                 System.out.println("8 - Ver card");
                 System.out.println("9 - Voltar para o menu anterior um card");
-                System.out.println("10 - Sair");
+                System.out.println("10 - Ver relatório do board");
+                System.out.println("11 - Sair");
                 option = scanner.nextInt();
                 switch (option) {
                     case 1 -> createCard();
@@ -48,7 +54,8 @@ public class BoardMenu {
                     case 7 -> showColumn();
                     case 8 -> showCard();
                     case 9 -> System.out.println("Voltando para o menu anterior");
-                    case 10 -> System.exit(0);
+                    case 10 -> showBoardReport();
+                    case 11 -> System.exit(0);
                     default -> System.out.println("Opção inválida, informe uma opção do menu");
                 }
             }
@@ -177,4 +184,22 @@ public class BoardMenu {
         }
     }
 
+    private void showBoardReport() throws SQLException{
+        try(var connection = getConnection()){
+            var optional = new BoardQueryService(connection).getBoardReport(entity.getId());
+            optional.ifPresent(b -> {
+                System.out.printf("Board [%s,%s]\n", b.boardId(), b.boardName());
+                for (CardReportDTO card : b.cards()) {
+                    System.out.printf("\nTarefa: %s (ID %d)%n", card.cardTitle(), card.cardId());
+                    for (ColumnDurationDTO col : card.columnDurations()) {
+                        // Converte segundos para horas/minutos se desejar, ou exibe em segundos
+                        System.out.printf("  - %s: %d segundos%n",
+                                col.columnName(), col.durationSeconds());
+                    }
+                    System.out.printf("  Tempo total: %d segundos%n", card.totalSeconds());
+                }
+            });
+
+        }
+    }
 }
