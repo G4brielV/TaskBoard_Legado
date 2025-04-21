@@ -11,14 +11,14 @@ classDiagram
         String name
         String kind
         Integer order
-        Long boardId
+        Long boardId (FK) 
     }
 
     class Card {
         Long id
         String title
         String description
-        Long boardColumnId
+        Long boardColumnId (FK) 
     }
 
     class Block {
@@ -27,15 +27,16 @@ classDiagram
         String blockReason
         Timestamp unblockedAt
         String unblockReason
-        Long cardId
+        Long cardId (FK) 
     }
 
     class Move {
         Long id
-        String description   
+        Long from_column_id (FK) 
+        Long to_column_id (FK)  
         Timestamp current_column_at
         Timestamp moved_at
-        Long cardId
+        Long cardId (FK) 
     }
 
     Board "1" o-- "1..*" BoardColumn
