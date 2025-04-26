@@ -1,9 +1,6 @@
 package br.com.dio.service;
 
-import br.com.dio.dto.BoardDetailsDTO;
-import br.com.dio.dto.BoardReportDTO;
-import br.com.dio.dto.CardReportDTO;
-import br.com.dio.dto.ColumnDurationDTO;
+import br.com.dio.dto.*;
 import br.com.dio.persistence.dao.BoardColumnDAO;
 import br.com.dio.persistence.dao.BoardDAO;
 import br.com.dio.persistence.dao.CardDAO;
@@ -50,7 +47,7 @@ public class BoardQueryService {
         var optional = dao.findById(boardId);
         if (optional.isPresent()){
             var entity = optional.get();
-            var report = cardDAO.findColumnDurationsByBoardId(entity.getId());
+            List<MoveDTO> report = cardDAO.findColumnDurationsByBoardId(entity.getId());
 
             Map<Long, List<ColumnDurationDTO>> durationsByCard = new LinkedHashMap<>();
             Map<Long, String> titleByCard = new HashMap<>();
@@ -61,7 +58,6 @@ public class BoardQueryService {
                         .computeIfAbsent(rec.cardId(), id -> new ArrayList<>())
                         .add(new ColumnDurationDTO(rec.columnName(), rec.durationSeconds()));
             }
-
             List<CardReportDTO> cards = new ArrayList<>();
             for (var entry : durationsByCard.entrySet()) {
                 Long cardId = entry.getKey();
@@ -77,12 +73,42 @@ public class BoardQueryService {
                         total
                 ));
             }
-
-
             var dto = new BoardReportDTO(boardId, entity.getName(), cards);
             return Optional.of(dto);
         }
         return Optional.empty();
     }
 
+    public Optional<BoardBlockCardDTO> getBoardCardsBlocked(final Long boardId) throws SQLException {
+        var dao = new BoardDAO(connection);
+        var cardDAO = new CardDAO(connection);
+        var optional = dao.findById(boardId);
+        if (optional.isPresent()) {
+            var entity = optional.get();
+            List<CardDAO.CardBlockRecord> blocks = cardDAO.findBlockedCardByBoardId(entity.getId());
+
+            Map<Long, List<BlockDTO>> blocksByCard = new LinkedHashMap<>();
+            Map<Long, String> cardTitles = new HashMap<>();
+
+            for (var blc : blocks) {
+                cardTitles.putIfAbsent(blc.cardId(), blc.cardTitle());
+                blocksByCard
+                        .computeIfAbsent(blc.cardId(), id -> new ArrayList<>())
+                        .add(new BlockDTO(blc.blockReason(), blc.unblockReason(), blc.durationSeconds()));
+            }
+
+            List<CardBlockDTO> cardBlockDTOs = new ArrayList<>();
+            for (var entry : blocksByCard.entrySet()) {
+                Long cardId = entry.getKey();
+                String cardTitle = cardTitles.get(cardId);
+                List<BlockDTO> blockList = entry.getValue();
+
+                cardBlockDTOs.add(new CardBlockDTO(cardId, cardTitle, blockList));
+            }
+
+            var dto = new BoardBlockCardDTO(boardId, entity.getName(), cardBlockDTOs);
+            return Optional.of(dto);
+        }
+        return Optional.empty();
+    }
 }

@@ -1,9 +1,6 @@
 package br.com.dio.ui;
 
-import br.com.dio.dto.BoardColumnInfoDTO;
-import br.com.dio.dto.BoardDetailsDTO;
-import br.com.dio.dto.CardReportDTO;
-import br.com.dio.dto.ColumnDurationDTO;
+import br.com.dio.dto.*;
 import br.com.dio.persistence.entity.BoardColumnEntity;
 import br.com.dio.persistence.entity.BoardEntity;
 import br.com.dio.persistence.entity.CardEntity;
@@ -31,7 +28,7 @@ public class BoardMenu {
         try {
             System.out.printf("Bem vindo ao board %s, selecione a operação desejada\n", entity.getId());
             var option = -1;
-            while (option != 9) {
+            while (option != 11) {
                 System.out.println("1 - Criar um card");
                 System.out.println("2 - Mover um card");
                 System.out.println("3 - Bloquear um card");
@@ -40,9 +37,10 @@ public class BoardMenu {
                 System.out.println("6 - Ver board");
                 System.out.println("7 - Ver coluna com cards");
                 System.out.println("8 - Ver card");
-                System.out.println("9 - Voltar para o menu anterior um card");
-                System.out.println("10 - Ver relatório do board");
-                System.out.println("11 - Sair");
+                System.out.println("9 - Ver relatorio do board");
+                System.out.println("10 - Ver relatorio de bloqueios no board");
+                System.out.println("11 - Voltar para o menu anterior");
+                System.out.println("12 - Sair");
                 option = scanner.nextInt();
                 switch (option) {
                     case 1 -> createCard();
@@ -53,9 +51,10 @@ public class BoardMenu {
                     case 6 -> showBoard();
                     case 7 -> showColumn();
                     case 8 -> showCard();
-                    case 9 -> System.out.println("Voltando para o menu anterior");
-                    case 10 -> showBoardReport();
-                    case 11 -> System.exit(0);
+                    case 9 -> showBoardReport();
+                    case 10 -> showBoardBlocks();
+                    case 11 -> System.out.println("Voltando para o menu anterior");
+                    case 12 -> System.exit(0);
                     default -> System.out.println("Opção inválida, informe uma opção do menu");
                 }
             }
@@ -69,7 +68,7 @@ public class BoardMenu {
         var card = new CardEntity();
         System.out.println("Informe o título do card");
         card.setTitle(scanner.next());
-        System.out.println("Informe a descrição do card");
+        System.out.println("Informe a descricao do card");
         card.setDescription(scanner.next());
         card.setBoardColumn(entity.getInitialColumn());
 
@@ -200,6 +199,25 @@ public class BoardMenu {
                 }
             });
 
+        }
+    }
+
+
+    private void showBoardBlocks() throws SQLException{
+        try(var connection = getConnection()){
+            var optional = new BoardQueryService(connection).getBoardCardsBlocked(entity.getId());
+            optional.ifPresent(b -> {
+                System.out.println("Relatório de Bloqueios do Board: " + b.boardName());
+                for (CardBlockDTO card :b.cards()) {
+                    System.out.println("  Card: " + card.cardTitle() + " (ID: " + card.cardId() + ")");
+                    for (BlockDTO block : card.blocks()) {
+                        System.out.println("    - Motivo Bloqueio: " + block.block_reason());
+                        System.out.println("      Motivo Desbloqueio: " + block.unblock_reason());
+                        System.out.println("      Duracao (segundos): " + block.durationSeconds());
+                    }
+                    System.out.println();
+                }
+            });
         }
     }
 }

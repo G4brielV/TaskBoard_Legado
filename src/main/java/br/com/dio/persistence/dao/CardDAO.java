@@ -1,7 +1,9 @@
 package br.com.dio.persistence.dao;
 
+import br.com.dio.dto.CardBlockDTO;
 import br.com.dio.dto.CardDetailsDTO;
 import br.com.dio.dto.CardReportDTO;
+import br.com.dio.dto.MoveDTO;
 import br.com.dio.persistence.entity.CardEntity;
 import com.mysql.cj.jdbc.StatementImpl;
 import lombok.AllArgsConstructor;
@@ -86,7 +88,7 @@ public class CardDAO {
         return Optional.empty();
     }
 
-    public List<MoveRecord> findColumnDurationsByBoardId (final Long boardId) throws SQLException {
+    public List<MoveDTO> findColumnDurationsByBoardId (final Long boardId) throws SQLException {
         var sql =
                 """
                         SELECT
@@ -99,13 +101,11 @@ public class CardDAO {
                         		ON c.id = m.card_id
                         	INNER JOIN boards_columns bc_from
                         		ON bc_from.id = m.from_column_id
-                        	INNER JOIN boards_columns bc_to
-                        		ON bc_to.id = m.to_column_id
                         WHERE bc_from.board_id = ?
                         and m.moved_at is not null
                         ORDER BY c.id, m.current_column_at
                 """;
-        List<MoveRecord> report = new ArrayList<>();
+        List<MoveDTO> report = new ArrayList<>();
         try(var statement = connection.prepareStatement(sql)){
             statement.setLong(1, boardId);
             statement.executeQuery();
@@ -113,7 +113,7 @@ public class CardDAO {
 
 
             while (resultSet.next()) {
-                report.add(new MoveRecord(
+                report.add(new MoveDTO(
                         resultSet.getLong("card_id"),
                         resultSet.getString("card_title"),
                         resultSet.getString("column_name"),
@@ -125,11 +125,50 @@ public class CardDAO {
 
     }
 
-    public static record MoveRecord(
+
+
+    public List<CardBlockRecord> findBlockedCardByBoardId(final Long boardId) throws SQLException{
+        var sql = """
+                SELECT
+                	c.id AS card_id,
+                	c.title AS card_title,
+                	blc.block_reason AS block_reason,
+                	IFNULL(blc.unblock_reason, "currently locked") AS unblock_reason,
+                	IFNULL(TIMESTAMPDIFF(SECOND, blc.blocked_at, blc.unblocked_at), 0) AS duration_seconds
+                FROM blocks blc
+                	inner join cards c
+                		on blc.card_id = c.id
+                	inner join boards_columns bc\s
+                		on c.board_column_id = bc.id
+                WHERE bc.board_id = ?
+                ORDER BY c.id
+                """;
+
+        List<CardBlockRecord> blocks = new ArrayList<>();
+        try(var statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, boardId);
+            statement.executeQuery();
+            var resultSet = statement.getResultSet();
+
+            while (resultSet.next()) {
+                blocks.add(new CardBlockRecord(
+                        resultSet.getLong("card_id"),
+                        resultSet.getString("card_title"),
+                        resultSet.getString("block_reason"),
+                        resultSet.getString("unblock_reason"),
+                        resultSet.getLong("duration_seconds")
+                ));
+            }
+            return blocks;
+        }
+    }
+    public record CardBlockRecord(
             Long cardId,
             String cardTitle,
-            String columnName,
+            String blockReason,
+            String unblockReason,
             long durationSeconds
     ) {}
+
 
 }
