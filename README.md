@@ -1,7 +1,7 @@
 # 📝 Board Project 
-Este projeto é um fork do repositório digitalinnovationone/board, focado em simular um sistema de gerenciamento de tarefas utilizando um fluxo de board estilo Kanban.
+Este projeto é um fork do repositório [digitalinnovationone/board](https://github.com/digitalinnovationone/santander-dev-week-2023-api), focado em simular um sistema de gerenciamento de tarefas utilizando um fluxo de board estilo Kanban.
 
-O projeto foi expandido para incluir novos requisitos opcionais, preservando a proposta de utilização de Java legado — ou seja, sem frameworks como Spring, Hibernate ou JPA — utilizando JDBC puro para comunicação com o banco de dados.
+O projeto foi expandido para incluir os [requisitos opcionais](https://github.com/digitalinnovationone/exercicios-java-basico/blob/main/projetos/4%20-%20T%C3%A9cnicas%20Avan%C3%A7adas%2C%20Padr%C3%B5es%20e%20Persist%C3%AAncia%20(Literalmente).md), preservando a proposta de utilização de Java legado — ou seja, sem frameworks como Spring, Hibernate ou JPA — utilizando JDBC puro para comunicação com o banco de dados.
 
 ---
 ## 🛠 Funcionalidades Implementadas
